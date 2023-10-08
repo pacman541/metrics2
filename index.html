@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html>
+<head>
+	
+	<title>Сохранность метрик по годам</title>
+
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	
+	<link rel="stylesheet" href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css" integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ==" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js" integrity="sha512-gZwIG9x3wUXg2hdXF6+rVkLF/0Vi9U8D2Ntg4Ga5I5BZpVkVxlJWbSQtXPSiUTtC0TjtGOmxa1AJPuV0CPthew==" crossorigin=""></script>
+	
+	<script src="leaflet.timeline.js"></script>
+
+	<style>
+		html, body {
+			height: 100%;
+			margin: 0;
+			}
+		#map { 
+			width: 100%;
+			height: 100%;
+			}
+		.info {
+			padding: 6px 8px; 
+			font: 14px/16px Arial, Helvetica, sans-serif; 
+			background: white; 
+			background: rgba(255,255,255,0.8); 
+			box-shadow: 0 0 15px rgba(0,0,0,0.2); 
+			border-radius: 5px;
+			text-align: center;
+			} 
+		.info h4 { 
+			margin: 0 0 5px; 
+			color: #777; 
+			}
+		.legend { 
+			text-align: left; 
+			line-height: 18px; 
+			color: #555; 
+			} 
+		.legend i {
+			width: 18px;
+			height: 18px;
+			float: left;
+			margin-right: 8px;
+			opacity: 0.7;
+			}
+		.legend .circle {
+			border-radius: 50%;
+			width: 10px;
+			height: 10px;
+			margin-top: 5px;
+			}
+			
+		.leaflet-bottom.leaflet-left{
+			border-radius: 15px;
+			width: 100%;
+			}
+        .leaflet-control-container{
+			box-sizing: border-box;
+			width: 50%;
+			margin: 25px;
+			margin-bottom: 5px;
+			border-radius: 5px;
+			}
+		.leaflet-timeline-controls{
+			background-color: green;
+	        border-radius: 15px;
+			}
+        .leaflet-control.leaflet-timeline-control .button-container button{
+            position:relative;
+	        width:20%;
+	        height:20px;
+			}
+		.leaflet-control.leaflet-timeline-control{
+			width:86%;
+			box-sizing:border-box;
+			margin:2%;
+			margin-bottom:20px;
+			text-align:center;
+			font-weight: 800;
+			}
+		.leaflet-control-layers.leaflet-control-layers-expanded.leaflet-timeline-control.leaflet-control{
+            background: rgba(0, 0, 0, 0);
+            border: 0px;
+			}
+        button{
+            border-radius: 50%;
+			}
+        .time-slider{
+           color: black;
+			}
+		.time-text{
+			font-size: 20px;
+			font-weight: 800;
+			text-decoration: underline;
+			color: white;
+			}
+	</style>
+</head>
+<body>
+
+<div id='map'></div>
+
+<script type="text/javascript" src="mr_zu.js"></script>
+
+<script type="text/javascript" src="metrics_yes.js"></script>
+
+<script type="text/javascript" src="metrics_no.js"></script>
+
+<script type="text/javascript" src="atd_2020.js"></script>
+
+<script type="text/javascript" src="atd_1900.js"></script>
+
+<script type="text/javascript">
+
+	var style_m = {
+		radius: 5,
+		fillColor: '#4CBB17',
+		color: 'grey',
+		weight: 0.2,
+		opacity: 1,
+		fillOpacity: 0.8
+		};
+
+	var style_d_2020 = {
+		weight: 1,
+		opacity: 0.55,
+		color: 'orange',
+		dashArray: '3',
+		fillOpacity: 0.1,
+		fillColor: '#C0C0C0'
+		};
+
+	var style_d_1900 = {
+		weight: 1.5,
+		opacity: 0.55,
+		color: 'blue',
+		dashArray: '3',
+		fillOpacity: 0.3,
+		fillColor: '#C0C0C0'
+		};
+
+	var geojson;
+
+	var districts_1900 = L.geoJson(d_1900, {
+			style: style_d_1900,
+			onEachFeature: function(feature, layer) {
+				layer.bindTooltip("<b>" + feature.properties.district + " уезд" + "</b>");
+			  },
+		});
+	
+	var districts_2020 = L.geoJson(d_2020, {
+			style: style_d_2020,
+			onEachFeature: function(feature, layer) {
+				layer.bindTooltip("<b>" + feature.properties.level_6 + "</b>");
+			  },
+		});
+
+	var slider = L.timelineSliderControl({
+		enableKeyboardControls: true,
+		steps: 58,
+		duration: 50000,  
+        });
+        
+	
+	var pointTimeline_yes = L.timeline(data_m_yes, {
+        pointToLayer: function (data, latlng) {
+			return L.circleMarker(latlng, style_m);
+			},
+		waitToUpdateMap: true,
+		onEachFeature: function(feature, layer) {
+            layer.bindTooltip("<b>" + feature.properties.settlement_2 + "</b>" + "<br/>" +  
+			feature.properties.district + " уезд" + "<br/>Сохранившиеся метрики: " + feature.properties.metrics);
+            }
+        });
+
+	var pointTimeline_no = L.timeline(data_m_no, {
+        pointToLayer: function (data, latlng) {
+			return L.circleMarker(latlng, style_m);
+			},
+		style: function style(feature) {
+			return {
+				fillColor: 'red',
+				};
+			},
+		waitToUpdateMap: true,
+		onEachFeature: function(feature, layer) {
+            layer.bindTooltip("<b>" + feature.properties.settlement_2 + "</b>" + "<br/>" +  
+			feature.properties.district + " уезд" + "<br/>Сохранившиеся метрики: " + feature.properties.metrics);
+            }
+        });
+    
+	var map = L.map('map', {
+		center: [57.9, 35.5],
+		zoom: 8,
+		layers: [districts_1900, pointTimeline_yes, pointTimeline_no]
+		});
+
+	var Mapbox = L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token=pk.eyJ1IjoicGFjbWFuNTQxIiwiYSI6ImdjdWJpWncifQ.HMUiMzlBWmc2ivI0x4ZhhA', {
+				id: 'mapbox/dark-v10',
+			    maxZoom: 18,
+				attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, ' +
+					'Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
+				tileSize: 512,
+				zoomOffset: -1
+			}).addTo(map);
+	
+	map.addControl(slider);
+	pointTimeline_yes.addTo(map);
+	pointTimeline_no.addTo(map);
+    slider.addTimelines(pointTimeline_yes, pointTimeline_no);
+		
+	//слой pointTimeline всегда поверх других слоев
+	map.on("overlayadd", function (event) {
+		pointTimeline_yes.bringToFront();
+		pointTimeline_no.bringToFront();
+		});
+	
+	var info = L.control();
+	info.onAdd = function (map) {
+		this._div = L.DomUtil.create('div', 'info');
+		this.update();
+		return this._div;
+		};
+
+	info.update = function (props) {
+		this._div.innerHTML = '<h4>Сохранность метрических книг по годам<br/>в сельских церквях за 1860-1918 гг.<br/>в Бежецком, Весьегонском и Вышневолоцком<br/>уездах Тверской губернии</h4>'
+		};
+
+	info.addTo(map);
+	
+	var overlayMaps = {
+		"метрики есть": pointTimeline_yes,
+		"метрик нет": pointTimeline_no,
+	    "уездное деление": districts_1900,
+	    "современное АТД": districts_2020,
+	    };
+	
+	var control_layer = L.control.layers(null, overlayMaps, {
+		collapsed: false,
+		}).addTo(map);
+	
+	map.attributionControl.addAttribution('Данные &copy; <a href="https://diana-225.livejournal.com/">Примако Диана</a>');
+	
+	var legend = L.control({position: 'bottomright'});
+
+	legend.onAdd = function (map) {
+		var div = L.DomUtil.create('div', 'info legend');
+		div.innerHTML += '<i class="circle" style="background: #4CBB17"></i> есть метрики<br>';
+		div.innerHTML += '<i class="circle" style="background: red"></i> нет метрик<br>';
+			return div;
+		};
+
+	legend.addTo(map);
+
+</script>
+
+</body>
+</html>
